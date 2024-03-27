@@ -75,7 +75,7 @@ namespace CurrensNetwork
                     object[] args = RecievedPacket.Params;
 
                     Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                    OnDataRecieved?.Invoke(methodName, args);
+                    OnDataRecieved?.Invoke(RecievedPacket);
                     foreach (Assembly assembly in assemblies)
                     {
                         MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())

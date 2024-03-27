@@ -95,7 +95,7 @@ namespace CurrensNetwork
                                             }
                                         }
                                 }
-                                OnDataRecieved?.Invoke(methodName, args.ToArray());
+                                OnDataRecieved?.Invoke(RecievedPacket);
                                 if (RecievedPacket.SendTo == 0)
                                     Networking.Rpc(RecievedPacket);
                                 else
@@ -106,7 +106,7 @@ namespace CurrensNetwork
                         else
                         {
                             connectedClients.Remove(client);
-                            OnClientDisconnected?.Invoke(client);
+                            OnClientDisconnected?.Invoke(connectedClients[client]);
                         }
 
                     }
