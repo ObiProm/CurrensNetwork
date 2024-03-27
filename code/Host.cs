@@ -14,8 +14,8 @@ namespace CurrensNetwork
     public class Host
     {
         public delegate void _OnClientConnected(TcpClient client);
-        public delegate void _OnClientDisconnected(EndPoint endPoint);
-        public delegate void _OnDataRecieved(string method, params object[] args);
+        public delegate void _OnClientDisconnected(TcpClient endPoint);
+        public delegate void _OnDataRecieved(Packet packet);
         public delegate void _OnHostCreated();
         public delegate void _OnHostCreationFailture(Exception ex);
 

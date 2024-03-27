@@ -19,6 +19,7 @@ namespace CurrensNetwork
         public static NetworkStream ClientStream { get; set; }
         public static void Rpc(string method, params object[] args)
         {
+            
             if (IsHost)
             {
                 foreach (var stream in ConnectedClients.Values)

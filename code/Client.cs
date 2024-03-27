@@ -10,7 +10,7 @@ namespace CurrensNetwork
 {
     public class Client
     {
-        public delegate void _OnDataRecieved(string method, params object[] args);
+        public delegate void _OnDataRecieved(Packet packet);
         public delegate void _OnClientConnected();
         public delegate void _OnClientDisconnected();
         public delegate void _OnConnectionTerminated();
