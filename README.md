@@ -61,6 +61,20 @@ With this library you can transfer data, you can use it for chat/game etc.
 </ul>
 </div>
 
+<div class="main" id="NetwokingSection">
+  <h2>Networking</h2>
+  <p><code>Networking</code> contains fields with information</p>
+  <ul>
+    <li><code>UniqueID</code> is a ID of user</li>
+    <li><code>IsHost</code> is a bool, which contains user's host status(<code>true</code> or <code>false</code>)</li>
+    <li><code>ConnectedClients</code> is a <code>Dictionary<EndPoint, TcpClient></code></li>
+    <li><code>ClientsIds</code> is a <code>Dictionary<ulong, EndPoint></code> contains IDs as a key</li>
+    <li><code>Host</code> is a <code>TcpListener</code>, if user does not hosting contains <code>null</code></li>
+    <li><code>ClientStream</code> contains client's <code>NetworkStream</code>, contains <code>null</code> if user in not client</li>
+  </ul>
+  
+</div>
+
 <div class="main" id="RpcSection">
   <h2>Rpc</h2>
   <p>Rpc calls given method on another client, you can use it with <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
@@ -88,6 +102,7 @@ With this library you can transfer data, you can use it for chat/game etc.
 
     // This will call "WriteMessage" at host
     // Because host always has ID 1
+    
     public void YourFunc() {
         Networking.RpcTo(1, "WriteMessage", "Hello");
     }
