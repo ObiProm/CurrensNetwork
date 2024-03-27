@@ -67,7 +67,7 @@ With this library you can transfer data, you can use it for chat/game etc.
   <ul>
     <li><code>UniqueID</code> is a ID of user</li>
     <li><code>IsHost</code> is a bool, which contains user's host status(<code>true</code> or <code>false</code>)</li>
-    <li><code>ConnectedClients</code> is a <code>Dictionary<EndPoint, TcpClient></code></li>
+    <li><code>ConnectedClients</code> is a <code>Dictionary\<EndPoint, TcpClient\></code></li>
     <li><code>ClientsIds</code> is a <code>Dictionary<ulong, EndPoint></code> contains IDs as a key</li>
     <li><code>Host</code> is a <code>TcpListener</code>, if user does not hosting contains <code>null</code></li>
     <li><code>ClientStream</code> contains client's <code>NetworkStream</code>, contains <code>null</code> if user in not client</li>
