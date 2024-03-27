@@ -70,14 +70,13 @@ With this library you can transfer data, you can use it for chat/game etc.
     <li><code>ConnectedClients</code> is a <code>Dictionary</code> with <code>EndPoint</code> as a key and <code>TcpClient</code> as a value</code></li>
     <li><code>ClientsIds</code> is a <code>Dictionary</code> with <code>ulong</code>(Client's ID) and <code>EndPoint</code> as a value</li>
     <li><code>Host</code> is a <code>TcpListener</code>, if user does not hosting contains <code>null</code></li>
-    <li><code>ClientStream</code> contains client's <code>NetworkStream</code>, contains <code>null</code> if user in not client</li>
+    <li><code>ClientStream</code> contains client's <code>NetworkStream</code>, contains <code>null</code> if user is not client</li>
   </ul>
-  
 </div>
 
 <div class="main" id="RpcSection">
   <h2>Rpc</h2>
-  <p>Rpc calls given method on another client, you can use it with <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
+  <p>Rpc calls given method on another clients, you can use it <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
   <p>Every method, which calls with <code>Rpc</code> must have attribute <code>[RPC]</code></p>
   <p>Example of calling: </p>
 
@@ -85,12 +84,11 @@ With this library you can transfer data, you can use it for chat/game etc.
         Networking.Rpc("WriteMessage", "Hello");
     }
     
-    [RPC]
+    // Will print "Hello" at all clients
+    [RPC] 
     public void WriteMessage(string message) {
         Console.WriteLine(message);
     }
-    // Will print "Hello" at all clients
-
 </div>
 
 <div class="main" id="RpcToSection">
@@ -111,5 +109,4 @@ With this library you can transfer data, you can use it for chat/game etc.
     public void WriteMessage(string message) {
         Console.WriteLine(message);
     }
-
 </div>
