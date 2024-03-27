@@ -60,3 +60,28 @@ With this library you can transfer data, you can use it for chat/game etc.
     <li><code>OnClientConnectionFailture</code> invokes when client can't connect to server(host)</li>
 </ul>
 </div>
+
+<div class="main" id="RpcSection">
+  <h2>Rpc</h2>
+  <p>Rpc calls given method on another client, you can use it with <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
+  <p>Every method, which calls with <code>Rpc</code> must have attribute <code>[RPC]</code></p>
+  <p>Example of calling: </p>
+
+    public void YourFunc() {
+        Networking.Rpc("WriteMessage", "Hello");
+    }
+    
+    [RPC]
+    public void WriteMessage(string message) {
+        Console.WriteLine(message);
+    }
+    // Will print "Hello" at all clients
+<p><code>Client</code> has 5 events</p>
+<ul>
+    <li><code>OnClientConnected</code> invokes when client successfully connects</li>
+    <li><code>OnClientDisconnected</code> invokes when client disconnects</li>
+    <li><code>OnDataRecieved</code> will return <code>Packet</code> of recieved data</li>
+    <li><code>OnConnectionTerminated</code> invokes when host stops connection/error</li>
+    <li><code>OnClientConnectionFailture</code> invokes when client can't connect to server(host)</li>
+</ul>
+</div>
