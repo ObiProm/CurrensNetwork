@@ -3,11 +3,11 @@ With this library you can transfer data, you can use it for chat/game etc.
 <p>Library contains in <strong>CurrensNetwork</strong> namespace</p>
 <p>Sections:</p>
 <ul>
-  <li><a href = "">Base information</a></li>
+  <li><a href = "#baseinfo">Base information</a></li>
   <li><a href = "#host">Host class</a></li>
-  <li><a href = "">Client class</a></li>
-  <li><a href = "">Using of RPC</a></li>
-  <li><a href = "">Using of RocTo</a></li>
+  <li><a href = "#client">Client class</a></li>
+  <li><a href = "#rpc">Using of RPC</a></li>
+  <li><a href = "#rpcto">Using of RocTo</a></li>
   <li><a href = "">Networking class</a></li>
   <li><a href = "">Packet</a></li>
 </ul>
