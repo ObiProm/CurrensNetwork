@@ -6,9 +6,9 @@ With this library you can transfer data, you can use it for chat/game etc.
   <li><a href = "#baseinfo">Base information</a></li>
   <li><a href = "#host">Host class</a></li>
   <li><a href = "#client">Client class</a></li>
+  <li><a href = "#networking">Networking class</a></li>
   <li><a href = "#rpc">Using of RPC</a></li>
   <li><a href = "#rpcto">Using of RocTo</a></li>
-  <li><a href = "">Networking class</a></li>
   <li><a href = "">Packet</a></li>
 </ul>
 <div class="main" id="BaseSection">
