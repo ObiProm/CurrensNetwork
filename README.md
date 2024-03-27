@@ -76,12 +76,25 @@ With this library you can transfer data, you can use it for chat/game etc.
         Console.WriteLine(message);
     }
     // Will print "Hello" at all clients
-<p><code>Client</code> has 5 events</p>
-<ul>
-    <li><code>OnClientConnected</code> invokes when client successfully connects</li>
-    <li><code>OnClientDisconnected</code> invokes when client disconnects</li>
-    <li><code>OnDataRecieved</code> will return <code>Packet</code> of recieved data</li>
-    <li><code>OnConnectionTerminated</code> invokes when host stops connection/error</li>
-    <li><code>OnClientConnectionFailture</code> invokes when client can't connect to server(host)</li>
-</ul>
+
+</div>
+
+<div class="main" id="RpcToSection">
+  <h2>RpcTo</h2>
+  <p>RpcTo works as Rpc, but calls method only at client with specific <code>UniqueID</code></p>
+  <p>You can get <code>UniqueID</code> in the dictionary <code>Networking.ClientIds</code>(Id is a key)</p>
+  <p>You can use it <code>Networking.RpcTo(ulong ID, string NameOfMethod, object[] params)</code></p>
+  <p>Example of calling: </p>
+
+    // This will call "WriteMessage" at host
+    // Because host always has ID 1
+    public void YourFunc() {
+        Networking.RpcTo(1, "WriteMessage", "Hello");
+    }
+    
+    [RPC]
+    public void WriteMessage(string message) {
+        Console.WriteLine(message);
+    }
+
 </div>
