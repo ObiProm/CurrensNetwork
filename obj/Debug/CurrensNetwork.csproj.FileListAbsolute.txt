@@ -1,0 +1,6 @@
+D:\repos\CurrensNetwork\CurrensNetwork\bin\Debug\CurrensNetwork.dll
+D:\repos\CurrensNetwork\CurrensNetwork\bin\Debug\CurrensNetwork.pdb
+D:\repos\CurrensNetwork\CurrensNetwork\obj\Debug\CurrensNetwork.csproj.AssemblyReference.cache
+D:\repos\CurrensNetwork\CurrensNetwork\obj\Debug\CurrensNetwork.csproj.CoreCompileInputs.cache
+D:\repos\CurrensNetwork\CurrensNetwork\obj\Debug\CurrensNetwork.dll
+D:\repos\CurrensNetwork\CurrensNetwork\obj\Debug\CurrensNetwork.pdb
