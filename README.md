@@ -41,7 +41,7 @@ With this library you can transfer data, you can use it for chat/game etc.
 </div>
 <div class="main" id="ClientSection">
   <h2>Client</h2>
-  <p>To start hosting you need to use <code>Connect(string IP, int Port)</code>, like</p>
+  <p>To connect to host you need to use <code>Connect(string IP, int Port)</code>, like</p>
 
     public void ClientFunc(){
         Client client = new Client();
