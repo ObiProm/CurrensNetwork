@@ -49,7 +49,7 @@ With this library you can transfer data, you can use it for chat/game etc.
         string IP = Console.ReadLine();
         Console.Write("Enter port: ");
         int port = int.Parse(Console.ReadLine());
-        client.Create(IP, port);
+        client.Connect(IP, port);
     }
 <p><code>Client</code> has 5 events</p>
 <ul>
