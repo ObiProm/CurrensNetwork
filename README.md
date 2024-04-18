@@ -22,13 +22,15 @@ With this library you can transfer data, you can use it for chat/game etc.
 <div class="main" id="HostSection">
   <h2>Host</h2>
   <p>To start hosting you need to use <code>Create(int Port)</code>, like</p>
-
-    public void HostFunc(){
-        Host host = new Host();
-        Console.Write("Enter port: ");
-        int port = int.Parse(Console.ReadLine());
-        host.Create(port);
-    }
+    
+```cs
+public void HostFunc(){
+    Host host = new Host();
+    Console.Write("Enter port: ");
+    int port = int.Parse(Console.ReadLine());
+    host.Create(port);
+}
+```
 <p>Also <code>Host</code> has some events</p>
 <ul>
     <li><code>OnClientConnected</code> will return <code>TcpClient</code> of connected client</li>
@@ -42,15 +44,17 @@ With this library you can transfer data, you can use it for chat/game etc.
 <div class="main" id="ClientSection">
   <h2>Client</h2>
   <p>To connect to host you need to use <code>Connect(string IP, int Port)</code>, like</p>
-
-    public void ClientFunc(){
-        Client client = new Client();
-        Console.Write("Enter IP: ");
-        string IP = Console.ReadLine();
-        Console.Write("Enter port: ");
-        int port = int.Parse(Console.ReadLine());
-        client.Connect(IP, port);
-    }
+    
+```cs
+public void ClientFunc(){
+    Client client = new Client();
+    Console.Write("Enter IP: ");
+    string IP = Console.ReadLine();
+    Console.Write("Enter port: ");
+    int port = int.Parse(Console.ReadLine());
+    client.Connect(IP, port);
+}
+```
 <p><code>Client</code> has 5 events</p>
 <ul>
     <li><code>OnClientConnected</code> invokes when client successfully connects</li>
@@ -79,16 +83,19 @@ With this library you can transfer data, you can use it for chat/game etc.
   <p>Rpc calls given method on another clients, you can use it <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
   <p>Every method, which calls with <code>Rpc</code> must have attribute <code>[RPC]</code></p>
   <p>Example of calling: </p>
-
-    public void YourFunc() {
-        Networking.Rpc("WriteMessage", "Hello");
-    }
     
-    // Will print "Hello" at all clients
-    [RPC] 
-    public void WriteMessage(string message) {
-        Console.WriteLine(message);
-    }
+```cs
+public void YourFunc() {
+    Networking.Rpc("WriteMessage", "Hello");
+}
+    
+// Will print "Hello" at all clients
+[RPC] 
+public void WriteMessage(string message) {
+    Console.WriteLine(message);
+}
+```
+
 </div>
 
 <div class="main" id="RpcToSection">
@@ -97,16 +104,18 @@ With this library you can transfer data, you can use it for chat/game etc.
   <p>You can get <code>UniqueID</code> in the dictionary <code>Networking.ClientIds</code>(Id is a key)</p>
   <p>You can use it <code>Networking.RpcTo(ulong ID, string NameOfMethod, object[] params)</code></p>
   <p>Example of calling: </p>
-
-    // This will call "WriteMessage" at host
-    // Because host always has ID 1
     
-    public void YourFunc() {
-        Networking.RpcTo(1, "WriteMessage", "Hello");
-    }
+```cs
+// This will call "WriteMessage" at host
+// Because host always has ID 1
     
-    [RPC]
-    public void WriteMessage(string message) {
-        Console.WriteLine(message);
-    }
+public void YourFunc() {
+    Networking.RpcTo(1, "WriteMessage", "Hello");
+}
+    
+[RPC]
+public void WriteMessage(string message) {
+    Console.WriteLine(message);
+}
+```
 </div>
