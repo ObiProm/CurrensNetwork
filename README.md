@@ -20,62 +20,87 @@ With this library you can transfer data, you can use it for chat/game etc.
 
 </div>
 <div class="main" id="HostSection">
-  <h2>Host</h2>
-  <p>To start hosting you need to use <code>Create(int Port)</code>, like</p>
+    <h2>Host</h2>
+    <h3>Description</h3>
+    <p>Represents a host for managing network connections and data communication.</p>
+    <h3>Methods</h3>
+    <ul>
+      <li><code>Create(int port)</code> - сreates a host on the specified port to accept incoming connections</li>
+    </ul>
+    <h3>Events</h3>
+    <ul>
+        <li><code>OnClientConnected</code>: Occurs when a client is connected. Returns <code>TcpClient</code> of connected client.</li>
+        <li><code>OnClientDisconnected</code>: Occurs when a client is disconnected. Returns <code>ulong</code> - ID of disconnected client.</li>
+        <li><code>OnDataRecieved</code>: Occurs when data is received. Returns <code>Packet</code> object containing the received data.</li>
+        <li><code>OnHostCreated</code>: Occurs when a host is successfully created. No return value.</li>
+        <li><code>OnHostCreationFailure</code>: Occurs when host creation fails. Returns <code>Exception</code> - reason if failure.</li>
+    </ul>
+    <h3>Example</h3>
     
 ```cs
 public void HostFunc(){
     Host host = new Host();
-    Console.Write("Enter port: ");
-    int port = int.Parse(Console.ReadLine());
-    host.Create(port);
+
+    host.OnHostCreated += () => { Console.WriteLine("Host created successfully."); };
+    host.OnHostCreationFailure += (exception) => { Console.WriteLine($"Failed to create host: {exception.Message}"); };
+    host.OnClientConnected += (client) => { Console.WriteLine($"Client connected: {client}"); };
+    host.OnClientDisconnected += (clientId) => { Console.WriteLine($"Client disconnected: ID {clientId}"); };
+    host.OnDataReceived += (packet) => { Console.WriteLine($"Data received: {packet.Data}"); };
+
+    // Create the host on a specified port
+    host.Create(8080);
 }
 ```
-<p>Also <code>Host</code> has some events</p>
-<ul>
-    <li><code>OnClientConnected</code> will return <code>TcpClient</code> of connected client</li>
-    <li><code>OnClientDisconnected</code> will return <code>TcpClient</code> of disconnected client</li>
-    <li><code>OnDataRecieved</code> will return <code>Packet</code> of recieved data</li>
-    <li><code>OnHostCreated</code> invokes when host successfully started</li>
-    <li><code>OnHostCreationFailture</code> invokes on host creation error, returns <code>Exeption</code></li>
-</ul>
-
 </div>
+
 <div class="main" id="ClientSection">
-  <h2>Client</h2>
-  <p>To connect to host you need to use <code>Connect(string IP, int Port)</code>, like</p>
+    <h2>Client</h2>
+    <h3>Description</h3>
+    <p>Represents a client for establishing connections to a remote server and handling data communication.</p>
+    <h3>Methods</h3>
+    <ul>
+        <li><code>Connect(string IP, int Port)</code>: Establishes a connection to a remote server with the specified IP address and port.</li>
+        <li><code>Disconnect()</code>: Disconnects the client from the remote connection.</li>
+    </ul>
+    <h3>Events</h3>
+    <ul>
+        <li><code>OnDataReceived</code>: Occurs when data is received from the remote server. Returns <code>Packet</code> object containing the received data.</li>
+        <li><code>OnClientConnected</code>: Occurs when the client successfully connects to the remote server.</li>
+        <li><code>OnClientDisconnected</code>: Occurs when the client is disconnected from the remote server.</li>
+        <li><code>OnConnectionTerminated</code>: Occurs when the connection with the remote server is terminated.</li>
+        <li><code>OnClientConnectionFailure</code>: Occurs when the client fails to establish a connection with the remote server. Returns <code>Exception</code> indicating the reason for failure.</li>
+        <li><code>OnReceivingDataFailure</code>: Occurs when the client fails to receive data from the remote server. Returns <code>Exception</code> indicating the reason for failure.</li>
+    </ul>
+    <h3>Example</h3>
     
 ```cs
 public void ClientFunc(){
     Client client = new Client();
-    Console.Write("Enter IP: ");
-    string IP = Console.ReadLine();
-    Console.Write("Enter port: ");
-    int port = int.Parse(Console.ReadLine());
-    client.Connect(IP, port);
+
+    client.OnClientConnected += () => { Console.WriteLine("Client connected successfully."); };
+    client.OnClientConnectionFailure += (exception) => { Console.WriteLine($"Failed to connect to server: {exception.Message}"); };
+    client.OnClientDisconnected += () => { Console.WriteLine("Client disconnected."); };
+    client.OnDataReceived += (packet) => { Console.WriteLine($"Data received: {packet.Data}"); };
+    client.OnReceivingDataFailure += (exception) => { Console.WriteLine($"Failed to receive data: {exception.Message}"); };
+    client.OnConnectionTerminated += () => { Console.WriteLine("Connection terminated."); };
+
+    // Connect to the server with IP "192.168.1.100" and port 8080
+    client.Connect("192.168.1.100", 8080);
 }
 ```
-<p><code>Client</code> has 5 events</p>
-<ul>
-    <li><code>OnClientConnected</code> invokes when client successfully connects</li>
-    <li><code>OnClientDisconnected</code> invokes when client disconnects</li>
-    <li><code>OnDataRecieved</code> will return <code>Packet</code> of recieved data</li>
-    <li><code>OnConnectionTerminated</code> invokes when host stops connection/error</li>
-    <li><code>OnClientConnectionFailture</code> invokes when client can't connect to server(host)</li>
-</ul>
 </div>
 
 <div class="main" id="NetwokingSection">
   <h2>Networking</h2>
   <p><code>Networking</code> contains fields with information</p>
-  <ul>
-    <li><code>UniqueID</code> is a ID of user</li>
-    <li><code>IsHost</code> is a bool, which contains user's host status(<code>true</code> or <code>false</code>)</li>
-    <li><code>ConnectedClients</code> is a <code>Dictionary</code> with <code>EndPoint</code> as a key and <code>TcpClient</code> as a value</code></li>
-    <li><code>ClientsIds</code> is a <code>Dictionary</code> with <code>ulong</code>(Client's ID) and <code>EndPoint</code> as a value</li>
-    <li><code>Host</code> is a <code>TcpListener</code>, if user does not hosting contains <code>null</code></li>
-    <li><code>ClientStream</code> contains client's <code>NetworkStream</code>, contains <code>null</code> if user is not client</li>
-  </ul>
+  <strong>Properties:</strong>
+    <ul>
+        <li><code>UniqueID</code>: Represents the unique identifier for the host. No return value.</li>
+        <li><code>IsHost</code>: Indicates whether the current instance is a host. No return value.</li>
+        <li><code>ConnectedClients</code>: Contains a dictionary of connected clients. Returns <code>Dictionary</code> or <code>null</code> (if client).</li>
+        <li><code>Host</code>: Stores the <code>TcpListener</code> for the host. No return value.</li>
+        <li><code>ClientStream</code>: Stores the <code>NetworkStream</code> for the client. No return value.</li>
+    </ul>
 </div>
 
 <div class="main" id="RpcSection">
