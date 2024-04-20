@@ -1,35 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Threading;
 
 namespace CurrensNetwork
 {
+    /// <summary>
+    /// Represents a host for managing network connections and data communication.
+    /// </summary>
     public class Host
     {
         public delegate void _OnClientConnected(TcpClient client);
-        public delegate void _OnClientDisconnected(TcpClient endPoint);
+        public delegate void _OnClientDisconnected(ulong ID);
         public delegate void _OnDataRecieved(Packet packet);
         public delegate void _OnHostCreated();
-        public delegate void _OnHostCreationFailture(Exception ex);
+        public delegate void _OnHostCreationFailure(Exception ex);
 
+        /// <summary>
+        /// Event that occurs when a client is connected.
+        /// </summary>
+        /// <returns><see cref="TcpClient"/> of connected client</returns>
         public event _OnClientConnected OnClientConnected;
+        /// <summary>
+        /// Event that occurs when a client is disconnected.
+        /// </summary>
+        /// <returns><see cref="ulong"/> - ID of disconected client</returns>
         public event _OnClientDisconnected OnClientDisconnected;
+        /// <summary>
+        /// Event that occurs when data is received.
+        /// </summary>
+        /// <returns><see cref="Packet"/> object containing the received data</returns>
         public event _OnDataRecieved OnDataRecieved;
+        /// <summary>
+        /// Event that occurs when a host is succesfully created.
+        /// </summary>
         public event _OnHostCreated OnHostCreated;
-        public event _OnHostCreationFailture OnHostCreationFailture;
+        /// <summary>
+        /// Event that occurs when host creation fails.
+        /// </summary>
+        /// <returns><see cref="Exception"/> - reason if Failure </returns>
+        public event _OnHostCreationFailure OnHostCreationFailure;
 
         private TcpListener listener;
         private Dictionary<EndPoint, TcpClient> connectedClients = new Dictionary<EndPoint, TcpClient>();
 
         private BackgroundWorker connectionsChecker = new BackgroundWorker();
         private BackgroundWorker dataReciever = new BackgroundWorker();
+
+        /// <summary>
+        /// Creates a host on the specified port to accept incoming connections.
+        /// </summary>
+        /// <param name="Port">The port number for hosting the server.</param>
         public void Create(int Port)
         {
             try
@@ -39,8 +65,8 @@ namespace CurrensNetwork
                 Networking.IsHost = true;
             }
             catch (Exception ex)
-            { 
-                OnHostCreationFailture?.Invoke(ex);
+            {
+                OnHostCreationFailure?.Invoke(ex);
             }
             Networking.UniqueID = 1;
             OnHostCreated?.Invoke();
@@ -57,8 +83,7 @@ namespace CurrensNetwork
             {
                 var tcpClient = listener.AcceptTcpClient();
                 connectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
-                Networking.ConnectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
-                Networking.ClientIds.Add(ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", "")), tcpClient.Client.RemoteEndPoint);
+                Networking.ConnectedClients.Add(ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", "")), tcpClient);
                 OnClientConnected?.Invoke(tcpClient);
             }
         }
@@ -106,7 +131,7 @@ namespace CurrensNetwork
                         else
                         {
                             connectedClients.Remove(client);
-                            OnClientDisconnected?.Invoke(connectedClients[client]);
+                            OnClientDisconnected?.Invoke(ulong.Parse(client.ToString().Replace(".", "").Replace(":", "")));
                         }
 
                     }

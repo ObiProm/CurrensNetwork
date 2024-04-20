@@ -8,62 +8,98 @@ using System.Net;
 
 namespace CurrensNetwork
 {
+    /// <summary>
+    /// Represents a client for establishing connections to a remote server and handling data communication.
+    /// </summary>
     public class Client
     {
-        public delegate void _OnDataRecieved(Packet packet);
+        public delegate void _OnDataReceived(Packet packet);
         public delegate void _OnClientConnected();
         public delegate void _OnClientDisconnected();
+        public delegate void _OnReceivingDataFailure(Exception exception);
         public delegate void _OnConnectionTerminated();
-        public delegate void _OnClientConnectionFailture();
+        public delegate void _OnClientConnectionFailure(Exception exception);
+
         /// <summary>
-        /// Invokes when client recieve any data from host
+        /// Represents the event handler for data received from the remote server.
         /// </summary>
-        public event _OnDataRecieved OnDataRecieved;
+        /// <returns><see cref="Packet"/> object containing the received data.</returns>
+        public event _OnDataReceived OnDataReceived;
         /// <summary>
-        /// Invokes when client sucesfuly connects
+        /// Represents the event handler for successful connection to the remote server.
         /// </summary>
         public event _OnClientConnected OnClientConnected;
         /// <summary>
-        /// Invokes when client disconnects
+        /// Represents the event handler for disconnection from the remote server.
         /// </summary>
         public event _OnClientDisconnected OnClientDisconnected;
         /// <summary>
-        /// Invokes when host stops connection/error
+        /// Represents the event handler for termination of the connection with the remote server.
         /// </summary>
         public event _OnConnectionTerminated OnConnectionTerminated;
         /// <summary>
-        /// Invokes when client can't connect to server(host)
+        /// Represents the event handler for failure to establish connection with the remote server.
         /// </summary>
-        public event _OnClientConnectionFailture OnClientConnectionFailture;
+        /// <returns><see cref="Exception"/> - reason of failure</returns>
+        public event _OnClientConnectionFailure OnClientConnectionFailure;
+        /// <summary>
+        /// Represents the event handler for failure to receive data from the remote server.
+        /// </summary>
+        /// <returns><see cref="Exception"/> - reason of failure</returns>
+        public event _OnReceivingDataFailure OnReceivingDataFailure;
 
         private TcpClient client = new TcpClient();
         private NetworkStream stream;
 
-        private BackgroundWorker dataReciever = new BackgroundWorker();
+        private BackgroundWorker dataReceiver = new BackgroundWorker();
+
+        /// <summary>
+        /// Establishes a connection to a remote server with the specified IP address and port.
+        /// </summary>
+        /// <param name="IP">The IP address of the remote server.</param>
+        /// <param name="Port">The port number for the connection.</param>
         public void Connect(string IP, int Port)
         {
-            try { client = new TcpClient(); client.Connect(IP, Port); stream = client.GetStream(); }
-            catch { OnClientConnectionFailture?.Invoke(); return; }
+            try
+            {
+                client = new TcpClient();
+                client.Connect(IP, Port);
+                stream = client.GetStream();
+            }
+            catch(Exception ex)
+            {
+                OnClientConnectionFailure?.Invoke(ex);
+                return;
+            }
+
             Networking.ClientStream = stream;
-            var ip = (client.Client.LocalEndPoint as IPEndPoint);
+
+            var ip = client.Client.LocalEndPoint as IPEndPoint;
             Networking.UniqueID = ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString());
+
             OnClientConnected?.Invoke();
 
-            dataReciever = new BackgroundWorker();
-            dataReciever.DoWork += (s, e) => DataReciever();
-            dataReciever.WorkerSupportsCancellation = true;
-            dataReciever.RunWorkerAsync();
+            dataReceiver = new BackgroundWorker();
+            dataReceiver.DoWork += (s, e) => DataReceiver();
+            dataReceiver.WorkerSupportsCancellation = true;
+            dataReceiver.RunWorkerAsync();
         }
 
+
+        /// <summary>
+        /// Disconnects the client from the remote connection.
+        /// </summary>
         public void Disconnect()
         {
             OnClientDisconnected?.Invoke();
             stream.Close();
             client.Close();
+
             Networking.ClientStream = null;
+            dataReceiver = null;
         }
 
-        private void DataReciever()
+        private void DataReceiver()
         {
             while (client.Connected)
             {
@@ -75,11 +111,11 @@ namespace CurrensNetwork
                     object[] args = RecievedPacket.Params;
 
                     Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                    OnDataRecieved?.Invoke(RecievedPacket);
+                    OnDataReceived?.Invoke(RecievedPacket);
                     foreach (Assembly assembly in assemblies)
                     {
                         MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())
-                        .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray(); // получаем долбанные методы
+                        .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray(); 
 
                         foreach (var method in methods)
                             if (method.Name == methodName && method.GetParameters().Length == args.Length)
@@ -89,11 +125,13 @@ namespace CurrensNetwork
                             }
                     }
                 }
-                catch { Console.WriteLine("Error on recieving data(maybe host stopped connecton)"); }
+                catch(Exception ex)
+                {
+                    OnReceivingDataFailure?.Invoke(ex);
+                }
             }
             Disconnect();
             OnConnectionTerminated?.Invoke();
-            dataReciever = null;
         }
     }
 }
