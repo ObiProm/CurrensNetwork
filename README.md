@@ -126,7 +126,7 @@ public void WriteMessage(string message) {
 <div class="main" id="RpcToSection">
   <h2>RpcTo</h2>
   <p>RpcTo works as Rpc, but calls method only at client with specific <code>UniqueID</code></p>
-  <p>You can get <code>UniqueID</code> in the dictionary <code>Networking.ClientIds</code>(Id is a key)</p>
+  <p>You can get <code>UniqueID</code> in the dictionary <code>Networking.ConnectedClients</code> as a key</p>
   <p>You can use it <code>Networking.RpcTo(ulong ID, string NameOfMethod, object[] params)</code></p>
   <p>Example of calling: </p>
     
@@ -143,4 +143,17 @@ public void WriteMessage(string message) {
     Console.WriteLine(message);
 }
 ```
+</div>
+
+<div class = "main id = "PacketSection">
+  <h2>Packet</h2>
+    <p>The <code>Packet</code> class represents data used for transporting within the CurrensNetwork.</p>
+    <p>It contains the following properties:</p>
+    <ul>
+        <li><code>Name</code>: Represents the name of the method to be called.</li>
+        <li><code>Params</code>: Represents the arguments of the method.</li>
+        <li><code>SendTo</code>: Represents the ID of the user to whom the data should be sent. Default value is 0.</li>
+    </ul>
+    <p>This class is marked as serializable to enable its objects to be easily serialized and transmitted over the network.</p>
+    <p><strong>Note:</strong> It's important to ensure that the <code>Name</code> property corresponds to a method name that exists and can be invoked.</p>
 </div>
