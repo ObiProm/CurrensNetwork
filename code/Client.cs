@@ -105,13 +105,12 @@ namespace CurrensNetwork
             {
                 try
                 {
-                    BinaryFormatter formatter = new BinaryFormatter();
-                    Packet RecievedPacket = (Packet)formatter.Deserialize(stream);
-                    string methodName = RecievedPacket.Name;
-                    object[] args = RecievedPacket.Params;
+                    Packet ReceivedPacket = Packet.Unpack(stream);
+                    string methodName = ReceivedPacket.Name;
+                    object[] args = ReceivedPacket.Params;
 
                     Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                    OnDataReceived?.Invoke(RecievedPacket);
+                    OnDataReceived?.Invoke(ReceivedPacket);
                     foreach (Assembly assembly in assemblies)
                     {
                         MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())

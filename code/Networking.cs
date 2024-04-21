@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CurrensNetwork
 {
@@ -38,15 +40,15 @@ namespace CurrensNetwork
                 {
                     Packet packet = new Packet() { Name = method, Params = args };
                     var _stream = stream.GetStream();
-                    BinaryFormatter bf = new BinaryFormatter();
-                    bf.Serialize(_stream, packet);
+                    _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                    _stream.Flush();
                 }
             }
             else
             {
                 Packet packet = new Packet() { Name = method, Params = args };
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ClientStream, packet);
+                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Flush();
             }
         }
         /// <summary>
@@ -60,14 +62,14 @@ namespace CurrensNetwork
                 foreach (var stream in ConnectedClients.Values)
                 {
                     var _stream = stream.GetStream();
-                    BinaryFormatter bf = new BinaryFormatter();
-                    bf.Serialize(_stream, packet);
+                    _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                    _stream.Flush();
                 }
             }
             else
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ClientStream, packet);
+                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Flush();
             }
         }
         /// <summary>
@@ -82,14 +84,14 @@ namespace CurrensNetwork
             {
                 Packet packet = new Packet() { Name = method, Params = args, SendTo = ID };
                 var _stream = ConnectedClients[ID].GetStream();
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(_stream, packet);
+                _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                _stream.Flush();
             }
             else
             {
                 Packet packet = new Packet() { Name = method, Params = args, SendTo = ID };
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ClientStream, packet);
+                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Flush();
             }
         }
         /// <summary>
@@ -102,13 +104,13 @@ namespace CurrensNetwork
             if (IsHost)
             {
                 var _stream = ConnectedClients[ID].GetStream();
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(_stream, packet);
+                _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                _stream.Flush();
             }
             else
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ClientStream, packet);
+                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Flush();
             }
         }
     }

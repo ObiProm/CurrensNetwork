@@ -52,6 +52,8 @@ namespace CurrensNetwork
         private BackgroundWorker connectionsChecker = new BackgroundWorker();
         private BackgroundWorker dataReciever = new BackgroundWorker();
 
+        public object RecievedPacket { get; private set; }
+
         /// <summary>
         /// Creates a host on the specified port to accept incoming connections.
         /// </summary>
@@ -100,32 +102,33 @@ namespace CurrensNetwork
                             var stream = connectedClients[client].GetStream();
                             if (stream.DataAvailable)
                             {
-                                BinaryFormatter formatter = new BinaryFormatter();
-                                Packet RecievedPacket = (Packet)formatter.Deserialize(stream);
-                                string methodName = RecievedPacket.Name;
-                                object[] args = RecievedPacket.Params;
+                                Packet ReceivedPacket = Packet.Unpack(stream);
+                                string methodName = ReceivedPacket.Name;
+                                object[] args = ReceivedPacket.Params;
                                 Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
                                 foreach (Assembly assembly in assemblies)
                                 {
                                     MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())
-                                    .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray(); // получаем долбанные методы
+                                    .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray();
 
                                     foreach (var method in methods)
+                                    {
                                         if (method.Name == methodName && method.GetParameters().Length == args.Length)
                                         {
-                                            if (RecievedPacket.SendTo == 0 || RecievedPacket.SendTo == 1)
+                                            if (ReceivedPacket.SendTo == 0 || ReceivedPacket.SendTo == 1)
                                             {
-                                                var ClassInstance = Activator.CreateInstance(method.DeclaringType);
+                                                object? ClassInstance = Activator.CreateInstance(method.DeclaringType);
                                                 method.Invoke(ClassInstance, args);
                                             }
                                         }
+                                    }
                                 }
-                                OnDataRecieved?.Invoke(RecievedPacket);
-                                if (RecievedPacket.SendTo == 0)
-                                    Networking.Rpc(RecievedPacket);
+                                OnDataRecieved?.Invoke(ReceivedPacket);
+                                if (ReceivedPacket.SendTo == 0)
+                                    Networking.Rpc(ReceivedPacket);
                                 else
-                                    if(RecievedPacket.SendTo != 1)
-                                        Networking.RpcTo(RecievedPacket.SendTo, RecievedPacket);
+                                    if(ReceivedPacket.SendTo != 1)
+                                        Networking.RpcTo(ReceivedPacket.SendTo, ReceivedPacket);
                             }
                         }
                         else
