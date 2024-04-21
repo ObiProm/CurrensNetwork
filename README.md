@@ -1,5 +1,6 @@
 <h1>Docs</h1>
 The <strong>CurrensNetwork</strong> C# library facilitates data transfer for various purposes such as chat or gaming.
+<p>NuGet: https://www.nuget.org/packages/CurrensNetwork/1.1.0</p>
 <p>Sections:</p>
 <ul>
   <li><a href = "#baseinfo">Base information</a></li>
