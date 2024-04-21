@@ -1,6 +1,5 @@
 <h1>Docs</h1>
-With this library you can transfer data, you can use it for chat/game etc.
-<p>Library contains in <strong>CurrensNetwork</strong> namespace</p>
+The <strong>CurrensNetwork</strong> C# library facilitates data transfer for various purposes such as chat or gaming.
 <p>Sections:</p>
 <ul>
   <li><a href = "#baseinfo">Base information</a></li>
@@ -150,9 +149,9 @@ public void WriteMessage(string message) {
     <p>The <code>Packet</code> class represents data used for transporting within the CurrensNetwork.</p>
     <p>It contains the following properties:</p>
     <ul>
-        <li><code>Name</code>: Represents the name of the method to be called.</li>
-        <li><code>Params</code>: Represents the arguments of the method.</li>
-        <li><code>SendTo</code>: Represents the ID of the user to whom the data should be sent. Default value is 0.</li>
+        <li><code>Name</code>(<code>string</code>): Represents the name of the method to be called.</li>
+        <li><code>Params</code>(<code>object[]</code>): Represents the arguments of the method.</li>
+        <li><code>SendTo</code>(<code>ulong</code>): Represents the ID of the user to whom the data should be sent. Default value is 0(will send packet to all).</li>
     </ul>
     <p>This class is marked as serializable to enable its objects to be easily serialized and transmitted over the network.</p>
     <p><strong>Note:</strong> It's important to ensure that the <code>Name</code> property corresponds to a method name that exists and can be invoked.</p>
