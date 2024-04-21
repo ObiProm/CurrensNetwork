@@ -74,7 +74,7 @@ namespace CurrensNetwork
             Networking.ClientStream = stream;
 
             var ip = client.Client.LocalEndPoint as IPEndPoint;
-            Networking.UniqueID = ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString());
+            Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
 
             OnClientConnected?.Invoke();
 

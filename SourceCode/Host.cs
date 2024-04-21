@@ -62,13 +62,13 @@ namespace CurrensNetwork
             {
                 listener = new TcpListener(IPAddress.Any, Port);
                 listener.Start();
-                Networking.IsHost = true;
+                Networking.SetIsHost(true);
             }
             catch (Exception ex)
             {
                 OnHostCreationFailure?.Invoke(ex);
             }
-            Networking.UniqueID = 1;
+            Networking.SetID(1);
             OnHostCreated?.Invoke();
             connectionsChecker.DoWork += (s, e) => ConnectionsChecker();
             connectionsChecker.RunWorkerAsync();

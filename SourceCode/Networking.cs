@@ -13,19 +13,21 @@ namespace CurrensNetwork
         /// <summary>
         /// UniqueID, host always has ID 1
         /// </summary>
-        internal static ulong UniqueID { get; set; }
+        public static ulong UniqueID { get; private set; }
         /// <summary>
         /// Contains data boolean is host
         /// </summary>
-        internal static bool IsHost { get; set; }
+        public static bool IsHost { get; private set; }
         /// <summary>
         /// Contains all connectedClients
         /// </summary>
         /// <returns>Dictionary or null(if client)</returns>
-        internal static Dictionary<ulong, TcpClient> ConnectedClients = new Dictionary<ulong, TcpClient>();
+        internal static Dictionary<ulong, TcpClient> ConnectedClients { get; set; }
         internal static TcpListener Host { get; set; }
         internal static NetworkStream ClientStream { get; set; }
 
+        internal static void SetIsHost(bool data){ IsHost = data; }
+        internal static void SetID(ulong Id) { UniqueID = Id; }
         /// <summary>
         /// Calls a specific method with given arguments at all connected clients
         /// </summary>
@@ -111,5 +113,6 @@ namespace CurrensNetwork
                 ClientStream.Flush();
             }
         }
+
     }
 }
