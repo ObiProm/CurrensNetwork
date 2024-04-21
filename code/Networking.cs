@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
 
 namespace CurrensNetwork
 {

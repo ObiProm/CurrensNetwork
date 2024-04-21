@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Net;
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CurrensNetwork
 {
@@ -117,7 +115,7 @@ namespace CurrensNetwork
                                         {
                                             if (ReceivedPacket.SendTo == 0 || ReceivedPacket.SendTo == 1)
                                             {
-                                                object? ClassInstance = Activator.CreateInstance(method.DeclaringType);
+                                                object ClassInstance = Activator.CreateInstance(method.DeclaringType);
                                                 method.Invoke(ClassInstance, args);
                                             }
                                         }

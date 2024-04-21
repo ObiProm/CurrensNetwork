@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
@@ -25,8 +27,8 @@ namespace CurrensNetwork
 
         internal byte[] Pack()
         {
-            using MemoryStream memoryStream = new();
-            using BinaryWriter writer = new(memoryStream);
+            MemoryStream memoryStream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(memoryStream);
             paramsCount = (short)Params.Length;
 
             writer.Write(Name);
@@ -42,12 +44,12 @@ namespace CurrensNetwork
         }
         internal static Packet Unpack(NetworkStream stream)
         {
-            BinaryReader reader = new(stream);
+            BinaryReader reader = new BinaryReader(stream);
 
-            Packet packet = new();
+            Packet packet = new Packet();
             packet.Name = reader.ReadString();
 
-            List<object> paramsList = new();
+            List<object> paramsList = new List<object>();
             int paramsCount = reader.ReadInt16();
 
             for (int i = 0; i < paramsCount; i++)
