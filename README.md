@@ -34,6 +34,7 @@ The <strong>CurrensNetwork</strong> C# library facilitates data transfer for var
         <li><code>OnDataRecieved</code>: Occurs when data is received. Returns <code>Packet</code> object containing the received data.</li>
         <li><code>OnHostCreated</code>: Occurs when a host is successfully created. No return value.</li>
         <li><code>OnHostCreationFailure</code>: Occurs when host creation fails. Returns <code>Exception</code> - reason if failure.</li>
+        <li><code>OnDataReceiveProgress</code>: Occurs when data is received from the network stream. Returns <code>int</code> - readed bytes.</li>
     </ul>
     <h3>Example</h3>
     
@@ -70,6 +71,7 @@ public void HostFunc(){
         <li><code>OnConnectionTerminated</code>: Occurs when the connection with the remote server is terminated.</li>
         <li><code>OnClientConnectionFailure</code>: Occurs when the client fails to establish a connection with the remote server. Returns <code>Exception</code> indicating the reason for failure.</li>
         <li><code>OnReceivingDataFailure</code>: Occurs when the client fails to receive data from the remote server. Returns <code>Exception</code> indicating the reason for failure.</li>
+        <li><code>OnDataReceiveProgress</code>: Occurs when data is received from the network stream. Returns <code>int</code> - readed bytes.</li>
     </ul>
     <h3>Example</h3>
     
