@@ -17,40 +17,40 @@ namespace CurrensNetwork
     /// </summary>
     public class Host
     {
-        public delegate void _OnClientConnected(ulong ID, TcpClient client);
-        public delegate void _OnClientDisconnected(ulong ID);
-        public delegate void _OnDataRecieved(Packet packet);
-        public delegate void _OnHostCreated();
-        public delegate void _OnHostCreationFailure(Exception ex);
-        public delegate void _OnDataReceiveProgress(int loaded);
-
         /// <summary>
         /// Event that occurs when a client is connected.
         /// </summary>
         /// <returns><see cref="TcpClient"/> of connected client</returns>
-        public event _OnClientConnected OnClientConnected;
+        public delegate void _OnClientConnected(ulong ID, TcpClient client);
         /// <summary>
         /// Event that occurs when a client is disconnected.
         /// </summary>
         /// <returns><see cref="ulong"/> - ID of disconected client</returns>
-        public event _OnClientDisconnected OnClientDisconnected;
+        public delegate void _OnClientDisconnected(ulong ID);
         /// <summary>
         /// Event that occurs when data is received.
         /// </summary>
         /// <returns><see cref="Packet"/> object containing the received data</returns>
-        public event _OnDataRecieved OnDataRecieved;
+        public delegate void _OnDataRecieved(Packet packet);
         /// <summary>
         /// Event that occurs when a host is succesfully created.
         /// </summary>
-        public event _OnHostCreated OnHostCreated;
+        public delegate void _OnHostCreated();
         /// <summary>
         /// Event that occurs when host creation fails.
         /// </summary>
         /// <returns><see cref="Exception"/> - reason if Failure </returns>
-        public event _OnHostCreationFailure OnHostCreationFailure;
+        public delegate void _OnHostCreationFailure(Exception ex);
         /// <summary>
         /// Invokes on downloading data progress, returns count of readed bytes
         /// </summary>
+        public delegate void _OnDataReceiveProgress(int loaded);
+
+        public event _OnClientConnected OnClientConnected;
+        public event _OnClientDisconnected OnClientDisconnected;
+        public event _OnDataRecieved OnDataRecieved;
+        public event _OnHostCreated OnHostCreated;
+        public event _OnHostCreationFailure OnHostCreationFailure;
         public event _OnDataReceiveProgress OnDataReceiveProgress;
 
         private TcpListener listener;
@@ -60,7 +60,7 @@ namespace CurrensNetwork
         /// Creates a host on the specified port to accept incoming connections.
         /// </summary>
         /// <param name="Port">The port number for hosting the server.</param>
-        public async void Create(int Port)
+        public async Task Create(int Port)
         {
             if (Port < 0 || Port > 65536)
                 throw new ArgumentOutOfRangeException($"Port value must be between 1 and 65536");
@@ -75,12 +75,22 @@ namespace CurrensNetwork
                 OnHostCreationFailure?.Invoke(ex);
             }
             Networking.SetID(1);
+            Networking.SetHost(this);
+            Networking.SetClient(null);
             OnHostCreated?.Invoke();
 
             Thread thread = new Thread(ConnectionsChecker);
             thread.Start();
 
-            await DataReciever();
+            _ = Task.Run(async () => await DataReciever());
+        }
+        /// <summary>
+        /// Stops host
+        /// </summary>
+        public void Stop()
+        {
+            listener.Stop();
+            Networking.Listener = null;
         }
 
         private void ConnectionsChecker()

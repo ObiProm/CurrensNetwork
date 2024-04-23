@@ -25,11 +25,19 @@ namespace CurrensNetwork
         /// </summary>
         /// <returns>Dictionary or null(if client)</returns>
         internal static Dictionary<ulong, TcpClient> ConnectedClients = new Dictionary<ulong, TcpClient>();
-        internal static TcpListener Host { get; set; }
+
+        /// <summary>
+        /// Current client
+        /// </summary>
+        public static Client Client { get; private set; }
+        public static Host Host { get; private set; }
+        internal static TcpListener Listener { get; set; }
         internal static NetworkStream ClientStream { get; set; }
 
-        internal static void SetIsHost(bool data){ IsHost = data; }
+        internal static void SetIsHost(bool data) { IsHost = data; }
         internal static void SetID(ulong Id) { UniqueID = Id; }
+        internal static void SetHost(Host host) { Host = host; }
+        internal static void SetClient(Client client) { Client = client; }
         /// <summary>
         /// Calls a specific method with given arguments at all connected clients
         /// </summary>

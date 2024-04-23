@@ -15,42 +15,43 @@ namespace CurrensNetwork
     /// </summary>
     public class Client
     {
-        public delegate void _OnDataReceived(Packet packet);
-        public delegate void _OnClientConnected();
-        public delegate void _OnClientDisconnected();
-        public delegate void _OnReceivingDataFailure(Exception exception);
-        public delegate void _OnConnectionTerminated();
-        public delegate void _OnDataReceiveProgress(int loaded);
-        public delegate void _OnClientConnectionFailure(Exception exception);
-
         /// <summary>
         /// Event handler for data received from the remote server.
         /// </summary>
-        public event _OnDataReceived OnDataReceived;
+        public delegate void _OnDataReceived(Packet packet);
         /// <summary>
         /// Event handler for successful connection to the remote server.
         /// </summary>
-        public event _OnClientConnected OnClientConnected;
+        public delegate void _OnClientConnected();
         /// <summary>
         /// Event handler for disconnection from the remote server.
         /// </summary>
-        public event _OnClientDisconnected OnClientDisconnected;
+        public delegate void _OnClientDisconnected();
         /// <summary>
         /// Event handler for termination of the connection with the remote server.
         /// </summary>
-        public event _OnConnectionTerminated OnConnectionTerminated;
+        public delegate void _OnReceivingDataFailure(Exception exception);
         /// <summary>
         /// Event handler for failure to establish connection with the remote server.
         /// </summary>
-        public event _OnClientConnectionFailure OnClientConnectionFailure;
+        public delegate void _OnConnectionTerminated();
         /// <summary>
         /// Event handler for failure to receive data from the remote server.
         /// </summary>
-        public event _OnReceivingDataFailure OnReceivingDataFailure;
-        
+        public delegate void _OnDataReceiveProgress(int loaded);
         /// <summary>
         /// Invokes on downloading data progress, returns count of readed bytes
         /// </summary>
+        public delegate void _OnClientConnectionFailure(Exception exception);
+
+
+        public event _OnDataReceived OnDataReceived;
+        public event _OnClientConnected OnClientConnected;
+        public event _OnClientDisconnected OnClientDisconnected;
+        public event _OnConnectionTerminated OnConnectionTerminated;
+        public event _OnClientConnectionFailure OnClientConnectionFailure;
+        public event _OnReceivingDataFailure OnReceivingDataFailure;
+
         public event _OnDataReceiveProgress OnDataReceiveProgress;
 
         private TcpClient client = new TcpClient();
@@ -68,7 +69,7 @@ namespace CurrensNetwork
             try
             {
                 client = new TcpClient();
-                await client.ConnectAsync(IP, Port);
+                client.Connect(IP, Port);
                 stream = client.GetStream();
             }
             catch (Exception ex)
@@ -78,13 +79,15 @@ namespace CurrensNetwork
             }
 
             Networking.ClientStream = stream;
+            Networking.SetClient(this);
+            Networking.SetHost(null);
 
             var ip = client.Client.LocalEndPoint as IPEndPoint;
             Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
 
             OnClientConnected?.Invoke();
 
-            await ReceiveDataAsync();
+            _ = Task.Run(async () => await DataReciever());
         }
         /// <summary>
         /// Establishes a connection to a remote server with the specified IP address and port.
@@ -108,13 +111,15 @@ namespace CurrensNetwork
             }
 
             Networking.ClientStream = stream;
+            Networking.SetClient(this);
+            Networking.SetHost(null);
 
             var ip = client.Client.LocalEndPoint as IPEndPoint;
             Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
 
             OnClientConnected?.Invoke();
 
-            await ReceiveDataAsync();
+            _ = Task.Run(async () => await DataReciever());
         }
 
         /// <summary>
@@ -123,16 +128,17 @@ namespace CurrensNetwork
         public void Disconnect()
         {
             OnClientDisconnected?.Invoke();
-            if (client == null) 
+            if (client == null)
                 throw new Exception("Client is already disconnected!");
 
             stream.Close();
             client.Close();
 
             Networking.ClientStream = null;
+            Networking.SetClient(null);
         }
 
-        private async Task ReceiveDataAsync()
+        private async Task DataReciever()
         {
             while (client.Connected)
             {
@@ -178,6 +184,7 @@ namespace CurrensNetwork
                     OnReceivingDataFailure?.Invoke(ex);
                 }
             }
+            if (client == null) return;
             Disconnect();
             OnConnectionTerminated?.Invoke();
         }
