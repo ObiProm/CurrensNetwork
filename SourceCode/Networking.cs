@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Net.Sockets;
 using System;
+using System.Text;
+using System.Linq;
 
 namespace CurrensNetwork
 {
@@ -22,7 +24,7 @@ namespace CurrensNetwork
         /// Contains all connectedClients
         /// </summary>
         /// <returns>Dictionary or null(if client)</returns>
-        internal static Dictionary<ulong, TcpClient> ConnectedClients { get; set; }
+        internal static Dictionary<ulong, TcpClient> ConnectedClients = new Dictionary<ulong, TcpClient>();
         internal static TcpListener Host { get; set; }
         internal static NetworkStream ClientStream { get; set; }
 
@@ -38,16 +40,16 @@ namespace CurrensNetwork
             {
                 foreach (var stream in ConnectedClients.Values)
                 {
-                    Packet packet = new Packet() { Name = method, Params = args };
+                    Packet packet = new Packet() { Name = method, Params = args.ToList() };
                     var _stream = stream.GetStream();
-                    _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                    _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                     _stream.Flush();
                 }
             }
             else
             {
-                Packet packet = new Packet() { Name = method, Params = args };
-                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                Packet packet = new Packet() { Name = method, Params = args.ToList() };
+                ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
         }
@@ -62,13 +64,13 @@ namespace CurrensNetwork
                 foreach (var stream in ConnectedClients.Values)
                 {
                     var _stream = stream.GetStream();
-                    _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                    _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                     _stream.Flush();
                 }
             }
             else
             {
-                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
         }
@@ -82,15 +84,15 @@ namespace CurrensNetwork
         {
             if (IsHost)
             {
-                Packet packet = new Packet() { Name = method, Params = args, SendTo = ID };
+                Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
                 var _stream = ConnectedClients[ID].GetStream();
-                _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 _stream.Flush();
             }
             else
             {
-                Packet packet = new Packet() { Name = method, Params = args, SendTo = ID };
-                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
+                ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
         }
@@ -104,12 +106,12 @@ namespace CurrensNetwork
             if (IsHost)
             {
                 var _stream = ConnectedClients[ID].GetStream();
-                _stream.Write(packet.Pack(), 0, packet.Pack().Length);
+                _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 _stream.Flush();
             }
             else
             {
-                ClientStream.Write(packet.Pack(), 0, packet.Pack().Length);
+                ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
         }

@@ -5,6 +5,13 @@ using System.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
+using System.Runtime.Serialization;
+using System.Collections;
+using System.Text;
+using System.Xml;
 
 namespace CurrensNetwork
 {
@@ -13,11 +20,12 @@ namespace CurrensNetwork
     /// </summary>
     public class Host
     {
-        public delegate void _OnClientConnected(TcpClient client);
+        public delegate void _OnClientConnected(ulong ID, TcpClient client);
         public delegate void _OnClientDisconnected(ulong ID);
         public delegate void _OnDataRecieved(Packet packet);
         public delegate void _OnHostCreated();
         public delegate void _OnHostCreationFailure(Exception ex);
+        public delegate void _OnDataReceiveProgress(int loaded);
 
         /// <summary>
         /// Event that occurs when a client is connected.
@@ -43,12 +51,15 @@ namespace CurrensNetwork
         /// </summary>
         /// <returns><see cref="Exception"/> - reason if Failure </returns>
         public event _OnHostCreationFailure OnHostCreationFailure;
+        /// <summary>
+        /// Invokes on downloading data progress, returns count of readed bytes
+        /// </summary>
+        public event _OnDataReceiveProgress OnDataReceiveProgress;
 
         private TcpListener listener;
         private Dictionary<EndPoint, TcpClient> connectedClients = new Dictionary<EndPoint, TcpClient>();
 
         private BackgroundWorker connectionsChecker = new BackgroundWorker();
-        private BackgroundWorker dataReciever = new BackgroundWorker();
 
         public object RecievedPacket { get; private set; }
 
@@ -56,7 +67,7 @@ namespace CurrensNetwork
         /// Creates a host on the specified port to accept incoming connections.
         /// </summary>
         /// <param name="Port">The port number for hosting the server.</param>
-        public void Create(int Port)
+        public async void Create(int Port)
         {
             try
             {
@@ -73,8 +84,7 @@ namespace CurrensNetwork
             connectionsChecker.DoWork += (s, e) => ConnectionsChecker();
             connectionsChecker.RunWorkerAsync();
 
-            dataReciever.DoWork += (s, e) => DataReciever();
-            dataReciever.RunWorkerAsync();
+            await DataReciever();
         }
 
         private void ConnectionsChecker()
@@ -83,16 +93,18 @@ namespace CurrensNetwork
             {
                 var tcpClient = listener.AcceptTcpClient();
                 connectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
-                Networking.ConnectedClients.Add(ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", "")), tcpClient);
-                OnClientConnected?.Invoke(tcpClient);
+                ulong ID = ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", ""));
+                Networking.ConnectedClients.Add(ID, tcpClient);
+                OnClientConnected?.Invoke(ID, tcpClient);
             }
         }
 
-        private void DataReciever()
+        private async Task DataReciever()
         {
             while (true)
             {
                 if (connectedClients.Count != 0)
+                {
                     foreach (var client in connectedClients.Keys.ToList())
                     {
                         if (connectedClients[client].Connected)
@@ -100,33 +112,50 @@ namespace CurrensNetwork
                             var stream = connectedClients[client].GetStream();
                             if (stream.DataAvailable)
                             {
-                                Packet ReceivedPacket = Packet.Unpack(stream);
-                                string methodName = ReceivedPacket.Name;
-                                object[] args = ReceivedPacket.Params;
+                                byte[] buffer = new byte[1024];
+                                int bytesRead;
+                                StringBuilder stringBuilder = new StringBuilder();
+                                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                                {
+                                    OnDataReceiveProgress?.Invoke(bytesRead);
+                                    stringBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                                    if (!stream.DataAvailable)
+                                        break;
+                                }
+                                string _prepacket = stringBuilder.ToString();
+                                XmlSerializer serializer = new XmlSerializer(typeof(Packet));
+                                StringReader reader = new StringReader(_prepacket);
+                                Packet receivedPacket = (Packet)serializer.Deserialize(reader);
+
+                                string methodName = receivedPacket.Name;
+                                object[] args = receivedPacket.Params.ToArray();
                                 Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
                                 foreach (Assembly assembly in assemblies)
                                 {
-                                    MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())
-                                    .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray();
+                                    MethodInfo[] methods = assembly.GetTypes()
+                                        .SelectMany(t => t.GetMethods())
+                                        .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0)
+                                        .ToArray();
 
                                     foreach (var method in methods)
                                     {
                                         if (method.Name == methodName && method.GetParameters().Length == args.Length)
                                         {
-                                            if (ReceivedPacket.SendTo == 0 || ReceivedPacket.SendTo == 1)
+                                            if (receivedPacket.SendTo == 0 || receivedPacket.SendTo == 1)
                                             {
-                                                object ClassInstance = Activator.CreateInstance(method.DeclaringType);
-                                                method.Invoke(ClassInstance, args);
+                                                object classInstance = Activator.CreateInstance(method.DeclaringType);
+                                                method.Invoke(classInstance, args);
                                             }
                                         }
                                     }
                                 }
-                                OnDataRecieved?.Invoke(ReceivedPacket);
-                                if (ReceivedPacket.SendTo == 0)
-                                    Networking.Rpc(ReceivedPacket);
+
+                                OnDataRecieved?.Invoke(receivedPacket);
+                                if (receivedPacket.SendTo == 0)
+                                    Networking.Rpc(receivedPacket);
                                 else
-                                    if(ReceivedPacket.SendTo != 1)
-                                        Networking.RpcTo(ReceivedPacket.SendTo, ReceivedPacket);
+                                    if (receivedPacket.SendTo != 1)
+                                    Networking.RpcTo(receivedPacket.SendTo, receivedPacket);
                             }
                         }
                         else
@@ -134,8 +163,8 @@ namespace CurrensNetwork
                             connectedClients.Remove(client);
                             OnClientDisconnected?.Invoke(ulong.Parse(client.ToString().Replace(".", "").Replace(":", "")));
                         }
-
                     }
+                }
             }
         }
     }
