@@ -29,7 +29,7 @@ The <strong>CurrensNetwork</strong> C# library facilitates data transfer for var
     </ul>
     <h3>Events</h3>
     <ul>
-        <li><code>OnClientConnected</code>: Occurs when a client is connected. Returns <code>TcpClient</code> of connected client.</li>
+        <li><code>OnClientConnected</code>: Occurs when a client is connected. Returns <code>ID</code> and <code>TcpClient</code> of connected client.</li>
         <li><code>OnClientDisconnected</code>: Occurs when a client is disconnected. Returns <code>ulong</code> - ID of disconnected client.</li>
         <li><code>OnDataRecieved</code>: Occurs when data is received. Returns <code>Packet</code> object containing the received data.</li>
         <li><code>OnHostCreated</code>: Occurs when a host is successfully created. No return value.</li>
