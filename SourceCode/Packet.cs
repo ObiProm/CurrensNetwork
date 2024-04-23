@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Xml.Serialization;
 
 namespace CurrensNetwork
@@ -18,7 +16,7 @@ namespace CurrensNetwork
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// Args of method
+        /// Arguments of method
         /// </summary>
         public List<object> Params { get; set; }
         /// <summary>

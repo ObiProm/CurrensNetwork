@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System;
@@ -8,10 +7,8 @@ using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using System.Runtime.Serialization;
-using System.Collections;
 using System.Text;
-using System.Xml;
+using System.Threading;
 
 namespace CurrensNetwork
 {
@@ -59,16 +56,14 @@ namespace CurrensNetwork
         private TcpListener listener;
         private Dictionary<EndPoint, TcpClient> connectedClients = new Dictionary<EndPoint, TcpClient>();
 
-        private BackgroundWorker connectionsChecker = new BackgroundWorker();
-
-        public object RecievedPacket { get; private set; }
-
         /// <summary>
         /// Creates a host on the specified port to accept incoming connections.
         /// </summary>
         /// <param name="Port">The port number for hosting the server.</param>
         public async void Create(int Port)
         {
+            if (Port < 0 || Port > 65536)
+                throw new ArgumentOutOfRangeException($"Port value must be between 1 and 65536");
             try
             {
                 listener = new TcpListener(IPAddress.Any, Port);
@@ -81,22 +76,21 @@ namespace CurrensNetwork
             }
             Networking.SetID(1);
             OnHostCreated?.Invoke();
-            connectionsChecker.DoWork += (s, e) => ConnectionsChecker();
-            connectionsChecker.RunWorkerAsync();
+
+            Thread thread = new Thread(ConnectionsChecker);
+            thread.Start();
 
             await DataReciever();
         }
 
         private void ConnectionsChecker()
         {
-            while (true)
-            {
-                var tcpClient = listener.AcceptTcpClient();
-                connectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
-                ulong ID = ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", ""));
-                Networking.ConnectedClients.Add(ID, tcpClient);
-                OnClientConnected?.Invoke(ID, tcpClient);
-            }
+            var tcpClient = listener.AcceptTcpClient();
+            connectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
+            ulong ID = ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", ""));
+            Networking.ConnectedClients.Add(ID, tcpClient);
+            OnClientConnected?.Invoke(ID, tcpClient);
+            ConnectionsChecker();
         }
 
         private async Task DataReciever()

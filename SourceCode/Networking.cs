@@ -36,6 +36,7 @@ namespace CurrensNetwork
         /// <param name="packet">The RPC packet to be sent.</param>
         public static void Rpc(string method, params object[] args)
         {
+            if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
             if (IsHost)
             {
                 foreach (var stream in ConnectedClients.Values)
@@ -82,6 +83,7 @@ namespace CurrensNetwork
         /// <param name="args">The arguments for the method.</param>
         public static void RpcTo(ulong ID, string method, params object[] args)
         {
+            if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
             if (IsHost)
             {
                 Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };

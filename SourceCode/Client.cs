@@ -1,13 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Serialization;
 
 namespace CurrensNetwork
@@ -65,6 +63,8 @@ namespace CurrensNetwork
         /// <param name="Port">The port number for the connection.</param>
         public async Task Connect(string IP, int Port)
         {
+            if (Port < 0 || Port > 65536)
+                throw new ArgumentOutOfRangeException("Port", $"Port value must be between 1 and 65536");
             try
             {
                 client = new TcpClient();
@@ -79,7 +79,37 @@ namespace CurrensNetwork
 
             Networking.ClientStream = stream;
 
-            var ip = client.Client.LocalEndPoint as System.Net.IPEndPoint;
+            var ip = client.Client.LocalEndPoint as IPEndPoint;
+            Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
+
+            OnClientConnected?.Invoke();
+
+            await ReceiveDataAsync();
+        }
+        /// <summary>
+        /// Establishes a connection to a remote server with the specified IP address and port.
+        /// </summary>
+        /// <param name="IP">The IP address of the remote server.</param>
+        /// <param name="Port">The port number for the connection.</param>
+        public async Task Connect(IPAddress IP, int Port)
+        {
+            if (Port < 0 || Port > 65536)
+                throw new ArgumentOutOfRangeException($"Port value must be between 1 and 65536");
+            try
+            {
+                client = new TcpClient();
+                await client.ConnectAsync(IP, Port);
+                stream = client.GetStream();
+            }
+            catch (Exception ex)
+            {
+                OnClientConnectionFailure?.Invoke(ex);
+                return;
+            }
+
+            Networking.ClientStream = stream;
+
+            var ip = client.Client.LocalEndPoint as IPEndPoint;
             Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
 
             OnClientConnected?.Invoke();
@@ -93,6 +123,9 @@ namespace CurrensNetwork
         public void Disconnect()
         {
             OnClientDisconnected?.Invoke();
+            if (client == null) 
+                throw new Exception("Client is already disconnected!");
+
             stream.Close();
             client.Close();
 
