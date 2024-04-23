@@ -1,6 +1,6 @@
 <h1>Docs</h1>
 The <strong>CurrensNetwork</strong> C# library facilitates data transfer for various purposes such as chat or gaming.
-<p>NuGet: https://www.nuget.org/packages/CurrensNetwork/1.2.1</p>
+<p>NuGet: https://www.nuget.org/packages/CurrensNetwork/1.2.4.2</p>
 <p>Sections:</p>
 <ul>
   <li><a href = "#baseinfo">Base information</a></li>
@@ -25,7 +25,8 @@ The <strong>CurrensNetwork</strong> C# library facilitates data transfer for var
     <p>Represents a host for managing network connections and data communication.</p>
     <h3>Methods</h3>
     <ul>
-      <li><code>Create(int port)</code> - сreates a host on the specified port to accept incoming connections</li>
+      <li><code>Create(int port)</code> - сreates a host on the specified port to accept incoming connections.</li>
+      <li><code>Stop()</code> - stops the host.</li>
     </ul>
     <h3>Events</h3>
     <ul>
@@ -33,6 +34,7 @@ The <strong>CurrensNetwork</strong> C# library facilitates data transfer for var
         <li><code>OnClientDisconnected</code>: Occurs when a client is disconnected. Returns <code>ulong</code> - ID of disconnected client.</li>
         <li><code>OnDataRecieved</code>: Occurs when data is received. Returns <code>Packet</code> object containing the received data.</li>
         <li><code>OnHostCreated</code>: Occurs when a host is successfully created. No return value.</li>
+        <li><code>OnHostStopped</code>: Occurs when a host has stopped. No return value.</li>
         <li><code>OnHostCreationFailure</code>: Occurs when host creation fails. Returns <code>Exception</code> - reason if failure.</li>
         <li><code>OnDataReceiveProgress</code>: Occurs when data is received from the network stream. Returns <code>int</code> - readed bytes.</li>
     </ul>
