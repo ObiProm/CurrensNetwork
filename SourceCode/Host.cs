@@ -45,6 +45,10 @@ namespace CurrensNetwork
         /// Invokes on downloading data progress, returns count of readed bytes
         /// </summary>
         public delegate void _OnDataReceiveProgress(int loaded);
+        /// <summary>
+        /// Event that occurs when a host has stopped.
+        /// </summary>
+        public delegate void _OnHostStopped();
 
         public event _OnClientConnected OnClientConnected;
         public event _OnClientDisconnected OnClientDisconnected;
@@ -52,7 +56,9 @@ namespace CurrensNetwork
         public event _OnHostCreated OnHostCreated;
         public event _OnHostCreationFailure OnHostCreationFailure;
         public event _OnDataReceiveProgress OnDataReceiveProgress;
+        public event _OnHostStopped OnHostStopped;
 
+        private Thread connectionsChecker = null;
         private TcpListener listener;
         private Dictionary<EndPoint, TcpClient> connectedClients = new Dictionary<EndPoint, TcpClient>();
 
@@ -79,8 +85,8 @@ namespace CurrensNetwork
             Networking.SetClient(null);
             OnHostCreated?.Invoke();
 
-            Thread thread = new Thread(ConnectionsChecker);
-            thread.Start();
+            connectionsChecker = new Thread(ConnectionsChecker);
+            connectionsChecker.Start();
 
             _ = Task.Run(async () => await DataReciever());
         }
@@ -90,16 +96,23 @@ namespace CurrensNetwork
         public void Stop()
         {
             listener.Stop();
-            Networking.Listener = null;
+
+            foreach (var client in connectedClients.Values)
+                client.Close();
+
+            connectedClients.Clear();
+            connectionsChecker.Abort();
+            OnHostStopped?.Invoke();
         }
+
 
         private void ConnectionsChecker()
         {
-            var tcpClient = listener.AcceptTcpClient();
-            connectedClients.Add(tcpClient.Client.RemoteEndPoint, tcpClient);
-            ulong ID = ulong.Parse(tcpClient.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", ""));
-            Networking.ConnectedClients.Add(ID, tcpClient);
-            OnClientConnected?.Invoke(ID, tcpClient);
+            var tcpClient = listener.AcceptTcpClientAsync();
+            connectedClients.Add(tcpClient.Result.Client.RemoteEndPoint, tcpClient.Result);
+            ulong ID = ulong.Parse(tcpClient.Result.Client.RemoteEndPoint.ToString().Replace(".", "").Replace(":", ""));
+            Networking.ConnectedClients.Add(ID, tcpClient.Result);
+            OnClientConnected?.Invoke(ID, tcpClient.Result);
             ConnectionsChecker();
         }
 
