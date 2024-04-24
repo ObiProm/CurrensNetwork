@@ -1,14 +1,13 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace CurrensNetwork
 {
@@ -52,7 +51,7 @@ namespace CurrensNetwork
 
         public event _OnClientConnected OnClientConnected;
         public event _OnClientDisconnected OnClientDisconnected;
-        public event _OnDataRecieved OnDataRecieved;
+        public event _OnDataRecieved OnDataReceived;
         public event _OnHostCreated OnHostCreated;
         public event _OnHostCreationFailure OnHostCreationFailure;
         public event _OnDataReceiveProgress OnDataReceiveProgress;
@@ -88,7 +87,7 @@ namespace CurrensNetwork
             connectionsChecker = new Thread(ConnectionsChecker);
             connectionsChecker.Start();
 
-            _ = Task.Run(async () => await DataReciever());
+            _ = Task.Run(async () => await DataReceiver());
         }
         /// <summary>
         /// Stops host
@@ -115,71 +114,50 @@ namespace CurrensNetwork
             OnClientConnected?.Invoke(ID, tcpClient.Result);
             ConnectionsChecker();
         }
+        private async Task<Packet> ReceivePacketAsync(NetworkStream stream)
+        {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            StringBuilder stringBuilder = new StringBuilder();
 
-        private async Task DataReciever()
+            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+            {
+                OnDataReceiveProgress?.Invoke(bytesRead);
+                stringBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                if (!stream.DataAvailable)
+                    break;
+            }
+
+            string _prepacket = stringBuilder.ToString();
+            XmlSerializer serializer = new XmlSerializer(typeof(Packet));
+            StringReader reader = new StringReader(_prepacket);
+            return (Packet)serializer.Deserialize(reader);
+        }
+
+        private async Task DataReceiver()
         {
             while (true)
             {
                 if (connectedClients.Count != 0)
                 {
-                    foreach (var client in connectedClients.Keys.ToList())
+                    foreach (var client in connectedClients.Where(c => c.Value.Connected && c.Value.GetStream().DataAvailable).ToList())
                     {
-                        if (connectedClients[client].Connected)
-                        {
-                            var stream = connectedClients[client].GetStream();
-                            if (stream.DataAvailable)
-                            {
-                                byte[] buffer = new byte[1024];
-                                int bytesRead;
-                                StringBuilder stringBuilder = new StringBuilder();
-                                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                                {
-                                    OnDataReceiveProgress?.Invoke(bytesRead);
-                                    stringBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                                    if (!stream.DataAvailable)
-                                        break;
-                                }
-                                string _prepacket = stringBuilder.ToString();
-                                XmlSerializer serializer = new XmlSerializer(typeof(Packet));
-                                StringReader reader = new StringReader(_prepacket);
-                                Packet receivedPacket = (Packet)serializer.Deserialize(reader);
+                        var stream = client.Value.GetStream();
+                        Packet receivedPacket = await ReceivePacketAsync(stream);
 
-                                string methodName = receivedPacket.Name;
-                                object[] args = receivedPacket.Params.ToArray();
-                                Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                                foreach (Assembly assembly in assemblies)
-                                {
-                                    MethodInfo[] methods = assembly.GetTypes()
-                                        .SelectMany(t => t.GetMethods())
-                                        .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0)
-                                        .ToArray();
+                        Networking.InvokeRpcMethod(receivedPacket);
+                        OnDataReceived?.Invoke(receivedPacket);
 
-                                    foreach (var method in methods)
-                                    {
-                                        if (method.Name == methodName && method.GetParameters().Length == args.Length)
-                                        {
-                                            if (receivedPacket.SendTo == 0 || receivedPacket.SendTo == 1)
-                                            {
-                                                object classInstance = Activator.CreateInstance(method.DeclaringType);
-                                                method.Invoke(classInstance, args);
-                                            }
-                                        }
-                                    }
-                                }
+                        if (receivedPacket.SendTo == 0)
+                            Networking.Rpc(receivedPacket);
+                        else if (receivedPacket.SendTo != 1)
+                            Networking.RpcTo(receivedPacket.SendTo, receivedPacket);
+                    }
 
-                                OnDataRecieved?.Invoke(receivedPacket);
-                                if (receivedPacket.SendTo == 0)
-                                    Networking.Rpc(receivedPacket);
-                                else
-                                    if (receivedPacket.SendTo != 1)
-                                    Networking.RpcTo(receivedPacket.SendTo, receivedPacket);
-                            }
-                        }
-                        else
-                        {
-                            connectedClients.Remove(client);
-                            OnClientDisconnected?.Invoke(ulong.Parse(client.ToString().Replace(".", "").Replace(":", "")));
-                        }
+                    foreach (var client in connectedClients.Where(c => !c.Value.Connected).ToList())
+                    {
+                        connectedClients.Remove(client.Key);
+                        OnClientDisconnected?.Invoke(ulong.Parse(client.Key.ToString().Replace(".", "").Replace(":", "")));
                     }
                 }
             }

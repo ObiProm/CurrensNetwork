@@ -1,6 +1,6 @@
 <h1>Docs</h1>
 The <strong>CurrensNetwork</strong> C# library facilitates data transfer for various purposes such as chat or gaming.
-<p>NuGet: https://www.nuget.org/packages/CurrensNetwork/1.2.4.2</p>
+<p>NuGet: https://www.nuget.org/packages/CurrensNetwork/</p>
 <p>Sections:</p>
 <ul>
   <li><a href = "#baseinfo">Base information</a></li>
@@ -45,10 +45,12 @@ public void HostFunc(){
     Host host = new Host();
 
     host.OnHostCreated += () => { Console.WriteLine("Host created successfully."); };
+    host.OnHostStopped += () => { Console.WriteLine("Host stopped!."); };
     host.OnHostCreationFailure += (exception) => { Console.WriteLine($"Failed to create host: {exception.Message}"); };
     host.OnClientConnected += (client) => { Console.WriteLine($"Client connected: {client}"); };
     host.OnClientDisconnected += (clientId) => { Console.WriteLine($"Client disconnected: ID {clientId}"); };
     host.OnDataReceived += (packet) => { Console.WriteLine($"Data received: {packet.Data}"); };
+    host.OnDataReceiveProgress += (bytes) => { Console.WriteLine(bytes + "bytes readed."); };
 
     // Create the host on a specified port
     host.Create(8080);
@@ -87,6 +89,7 @@ public void ClientFunc(){
     client.OnDataReceived += (packet) => { Console.WriteLine($"Data received: {packet.Data}"); };
     client.OnReceivingDataFailure += (exception) => { Console.WriteLine($"Failed to receive data: {exception.Message}"); };
     client.OnConnectionTerminated += () => { Console.WriteLine("Connection terminated."); };
+    client.OnDataReceiveProgress += (bytes) => { Console.WriteLine(bytes + "bytes readed."); };
 
     // Connect to the server with IP "192.168.1.100" and port 8080
     client.Connect("192.168.1.100", 8080);
@@ -111,19 +114,29 @@ public void ClientFunc(){
   <h2>Rpc</h2>
   <p>Rpc calls given method on another clients, you can use it <code>Networking.Rpc(string NameOfMethod, object[] params)</code></p>
   <p>Every method, which calls with <code>Rpc</code> must have attribute <code>[RPC]</code></p>
+  <p><code>[RPC]</code> has <code>bool</code> value <code>DoLocally</code>(<code>false</code> default), if it's <code>true</code> - method will run locally after calling it using <code>Rpc</code> or <code>RpcTo</code></p>
   <p>Example of calling: </p>
     
-```cs
+```csharp
 public void YourFunc() {
     Networking.Rpc("WriteMessage", "Hello");
+    Networking.Rpc("WriteMessageLocally", "Hello, I'm local message!'");
 }
     
 // Will print "Hello" at all clients
-[RPC] 
+[RPC]
 public void WriteMessage(string message) {
     Console.WriteLine(message);
 }
+
+// Will print "Hello" at all clients + at sender clieny/host
+[RPC(true)]
+public void WriteMessageLocally(string message) {
+    Console.WriteLine(message);
+}
 ```
+**Warning!**
+You should be aware that DoLocally can lead to double executions on the client (but not on the host), be careful when using this feature (this element will be simplified in the future)
 
 </div>
 

@@ -127,6 +127,7 @@ namespace CurrensNetwork
         /// </summary>
         public void Disconnect()
         {
+            if (!client.Connected) { return; }
             OnClientDisconnected?.Invoke();
             if (client == null)
                 throw new Exception("Client is already disconnected!");
@@ -137,54 +138,39 @@ namespace CurrensNetwork
             Networking.ClientStream = null;
             Networking.SetClient(null);
         }
+        private async Task<Packet> ReceivePacketAsync()
+        {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            StringBuilder stringBuilder = new StringBuilder();
 
+            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+            {
+                OnDataReceiveProgress?.Invoke(bytesRead);
+                stringBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                if (!stream.DataAvailable)
+                    break;
+            }
+
+            string _prepacket = stringBuilder.ToString();
+            XmlSerializer serializer = new XmlSerializer(typeof(Packet));
+            StringReader reader = new StringReader(_prepacket);
+            return (Packet)serializer.Deserialize(reader);
+        }
         private async Task DataReciever()
         {
             while (client.Connected)
             {
                 try
                 {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    StringBuilder stringBuilder = new StringBuilder();
-                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                    {
-                        OnDataReceiveProgress?.Invoke(bytesRead);
-                        stringBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                        if (!stream.DataAvailable)
-                            break;
-                    }
-                    string _prepacket = stringBuilder.ToString();
-                    XmlSerializer serializer = new XmlSerializer(typeof(Packet));
-                    StringReader reader = new StringReader(_prepacket);
-                    Packet receivedPacket = (Packet)serializer.Deserialize(reader);
-
-                    string methodName = receivedPacket.Name;
-                    object[] args = receivedPacket.Params.ToArray();
-
-                    Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                    OnDataReceived?.Invoke(receivedPacket);
-                    foreach (Assembly assembly in assemblies)
-                    {
-                        MethodInfo[] methods = assembly.GetTypes().SelectMany(t => t.GetMethods())
-                            .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0).ToArray();
-
-                        foreach (var method in methods)
-                        {
-                            if (method.Name == methodName && method.GetParameters().Length == args.Length)
-                            {
-                                var classInstance = Activator.CreateInstance(method.DeclaringType);
-                                method.Invoke(classInstance, args);
-                            }
-                        }
-                    }
+                    Packet receivedPacket = ReceivePacketAsync().Result;
+                    Networking.InvokeRpcMethod(receivedPacket);
                 }
                 catch (Exception ex)
                 {
                     OnReceivingDataFailure?.Invoke(ex);
                 }
             }
-            if (client == null) return;
             Disconnect();
             OnConnectionTerminated?.Invoke();
         }

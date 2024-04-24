@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System;
 using System.Text;
 using System.Linq;
+using System.Reflection;
 
 namespace CurrensNetwork
 {
@@ -13,7 +14,7 @@ namespace CurrensNetwork
     public static class Networking
     {
         /// <summary>
-        /// UniqueID, host always has ID 1
+        /// UniqueID of user, host always has ID 1
         /// </summary>
         public static ulong UniqueID { get; private set; }
         /// <summary>
@@ -27,9 +28,12 @@ namespace CurrensNetwork
         internal static Dictionary<ulong, TcpClient> ConnectedClients = new Dictionary<ulong, TcpClient>();
 
         /// <summary>
-        /// Current client
+        /// Cached client
         /// </summary>
         public static Client Client { get; private set; }
+        /// <summary>
+        /// Cached host
+        /// </summary>
         public static Host Host { get; private set; }
         internal static TcpListener Listener { get; set; }
         internal static NetworkStream ClientStream { get; set; }
@@ -45,11 +49,12 @@ namespace CurrensNetwork
         public static void Rpc(string method, params object[] args)
         {
             if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
+            Packet packet = new Packet() { Name = method, Params = args.ToList() };
+            CheckForLocalPerform(packet);
             if (IsHost)
             {
                 foreach (var stream in ConnectedClients.Values)
                 {
-                    Packet packet = new Packet() { Name = method, Params = args.ToList() };
                     var _stream = stream.GetStream();
                     _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                     _stream.Flush();
@@ -57,7 +62,6 @@ namespace CurrensNetwork
             }
             else
             {
-                Packet packet = new Packet() { Name = method, Params = args.ToList() };
                 ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
@@ -68,6 +72,7 @@ namespace CurrensNetwork
         /// <param name="packet">The RPC packet to be sent.</param>
         public static void Rpc(Packet packet)
         {
+            CheckForLocalPerform(packet);
             if (IsHost)
             {
                 foreach (var stream in ConnectedClients.Values)
@@ -92,16 +97,17 @@ namespace CurrensNetwork
         public static void RpcTo(ulong ID, string method, params object[] args)
         {
             if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
+            Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
+            CheckForLocalPerform(packet);
             if (IsHost)
             {
-                Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
                 var _stream = ConnectedClients[ID].GetStream();
                 _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 _stream.Flush();
             }
             else
             {
-                Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
+                
                 ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
@@ -113,6 +119,7 @@ namespace CurrensNetwork
         /// <param name="packet">The RPC packet containing the method and arguments.</param>
         public static void RpcTo(ulong ID, Packet packet)
         {
+            CheckForLocalPerform(packet);
             if (IsHost)
             {
                 var _stream = ConnectedClients[ID].GetStream();
@@ -126,5 +133,41 @@ namespace CurrensNetwork
             }
         }
 
+        internal static void InvokeRpcMethod(Packet packet)
+        {
+            string methodName = packet.Name;
+            object[] args = packet.Params.ToArray();
+            MethodInfo method = GetMethodByName(methodName, args);
+
+            var classInstance = Activator.CreateInstance(method.DeclaringType);
+            method.Invoke(classInstance, args);
+           
+        }
+
+        internal static MethodInfo GetMethodByName(string methodName, object[] args) 
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            foreach (Assembly assembly in assemblies)
+            {
+                MethodInfo[] methods = assembly.GetTypes()
+                    .SelectMany(t => t.GetMethods())
+                    .Where(m => m.GetCustomAttributes(typeof(RPC), false).Length > 0)
+                    .ToArray();
+
+                foreach (var method in methods)
+                    if (method.Name == methodName && method.GetParameters().Length == args.Length)
+                        return method;
+            }
+            return null;
+        }
+
+        internal static void CheckForLocalPerform(Packet packet)
+        {
+            MethodInfo method = GetMethodByName(packet.Name, packet.Params.ToArray());
+            var attribute = (RPC)Attribute.GetCustomAttribute(method, typeof(RPC));
+            if (attribute.DoLocally)
+                InvokeRpcMethod(packet);
+        }
     }
 }
