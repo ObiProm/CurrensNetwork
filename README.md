@@ -1,4 +1,4 @@
- Docs
+# Docs
 The **CurrensNetwork** C# library facilitates data transfer for various purposes such as chat or gaming.
 
 Sections:
