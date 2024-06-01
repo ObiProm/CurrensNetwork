@@ -129,9 +129,8 @@ namespace CurrensNetwork
                 }
                 catch { }
 
-                if (MaxClients >= ConnectedClients.Count)
+                if (MaxClients <= ConnectedClients.Count)
                 {
-                    CheckingForConnections = false;
                     CheckingForConnections = false;
                     connectionsChecker.Interrupt();
                 }
@@ -183,7 +182,7 @@ namespace CurrensNetwork
                     {
                         ConnectedClients.Remove(client.Key);
                         OnClientDisconnected?.Invoke(ulong.Parse(client.Key.ToString().Replace(".", "").Replace(":", "")));
-                        if (MaxClients < ConnectedClients.Count)
+                        if (MaxClients > ConnectedClients.Count)
                         {
                             CheckingForConnections = true;
                             connectionsChecker = new Thread(ConnectionsChecker);
