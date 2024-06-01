@@ -1,5 +1,6 @@
 # Docs
 The **CurrensNetwork** C# library facilitates data transfer for various purposes such as chat or gaming.
+NuGet package - https://www.nuget.org/packages/CurrensNetwork
 
 Sections:
 - [Base information](#baseinfo)
