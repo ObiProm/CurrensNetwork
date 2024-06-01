@@ -32,5 +32,14 @@ namespace CurrensNetwork
             var xmlContent = sw.ToString();
             return xmlContent;
         }
+
+        public string ToString()
+        {
+            string _params = "";
+            foreach (var param in this.Params)
+                _params += param.ToString() + "(" + param.GetType() + ")";
+
+            return "Method: " + this.Name + "\nParams: " + _params + "\nSendTo: " + this.SendTo;
+        }
     }  
 }

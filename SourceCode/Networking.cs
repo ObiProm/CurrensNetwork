@@ -7,6 +7,7 @@ using System.Reflection;
 
 namespace CurrensNetwork
 {
+    public enum NetworkState { Host, Client, Server, None }
     /// <summary>
     /// This class was created for easy-calling RPC.
     /// It also stores some data
@@ -14,44 +15,48 @@ namespace CurrensNetwork
     public static class Networking
     {
         /// <summary>
-        /// UniqueID of user, host always has ID 1
+        /// UniqueID of user, <see cref="Server"/> always has ID 1
         /// </summary>
-        public static ulong UniqueID { get; private set; }
+        public static ulong UniqueID { get; internal set; }
         /// <summary>
-        /// Contains data boolean is host
+        /// Contains current NetworkState enum
         /// </summary>
-        public static bool IsHost { get; private set; }
+        public static NetworkState NetworkState { get; internal set; } = NetworkState.None;
         /// <summary>
-        /// Contains all connectedClients
+        /// Contains all ConnectedClients
         /// </summary>
         /// <returns>Dictionary or null(if client)</returns>
         internal static Dictionary<ulong, TcpClient> ConnectedClients = new Dictionary<ulong, TcpClient>();
 
         /// <summary>
-        /// Cached client
+        /// Current client
         /// </summary>
-        public static Client Client { get; private set; }
+        public static Client Client { get; internal set; }
         /// <summary>
-        /// Cached host
+        /// Current host
         /// </summary>
-        public static Host Host { get; private set; }
+        public static Host Host { get; internal set; }
+        /// <summary>
+        /// Current server
+        /// </summary>
+        public static Server Server { get; internal set; }
         internal static TcpListener Listener { get; set; }
         internal static NetworkStream ClientStream { get; set; }
 
-        internal static void SetIsHost(bool data) { IsHost = data; }
+        /*internal static void SetIsHost(bool data) { IsHost = data; }
         internal static void SetID(ulong Id) { UniqueID = Id; }
         internal static void SetHost(Host host) { Host = host; }
-        internal static void SetClient(Client client) { Client = client; }
+        internal static void SetClient(Client client) { Client = client; }*/
         /// <summary>
         /// Calls a specific method with given arguments at all connected clients
         /// </summary>
-        /// <param name="packet">The RPC packet to be sent.</param>
         public static void Rpc(string method, params object[] args)
         {
             if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
+
+            // Creating packet from data
             Packet packet = new Packet() { Name = method, Params = args.ToList() };
-            CheckForLocalPerform(packet);
-            if (IsHost)
+            if (NetworkState == NetworkState.Server || NetworkState == NetworkState.Host)
             {
                 foreach (var stream in ConnectedClients.Values)
                 {
@@ -72,9 +77,9 @@ namespace CurrensNetwork
         /// <param name="packet">The RPC packet to be sent.</param>
         public static void Rpc(Packet packet)
         {
-            CheckForLocalPerform(packet);
-            if (IsHost)
+            if (NetworkState == NetworkState.Server || NetworkState == NetworkState.Host)
             {
+                // Send packet to all connected clients
                 foreach (var stream in ConnectedClients.Values)
                 {
                     var _stream = stream.GetStream();
@@ -98,8 +103,8 @@ namespace CurrensNetwork
         {
             if (method == null) throw new ArgumentNullException("Methodname", "Method name can't be null!");
             Packet packet = new Packet() { Name = method, Params = args.ToList(), SendTo = ID };
-            CheckForLocalPerform(packet);
-            if (IsHost)
+
+            if (NetworkState == NetworkState.Server || NetworkState == NetworkState.Host)
             {
                 var _stream = ConnectedClients[ID].GetStream();
                 _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
@@ -107,7 +112,6 @@ namespace CurrensNetwork
             }
             else
             {
-                
                 ClientStream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
                 ClientStream.Flush();
             }
@@ -119,8 +123,7 @@ namespace CurrensNetwork
         /// <param name="packet">The RPC packet containing the method and arguments.</param>
         public static void RpcTo(ulong ID, Packet packet)
         {
-            CheckForLocalPerform(packet);
-            if (IsHost)
+            if (NetworkState == NetworkState.Server || NetworkState == NetworkState.Host)
             {
                 var _stream = ConnectedClients[ID].GetStream();
                 _stream.Write(Encoding.ASCII.GetBytes(packet.Pack()), 0, packet.Pack().Length);
@@ -141,7 +144,6 @@ namespace CurrensNetwork
 
             var classInstance = Activator.CreateInstance(method.DeclaringType);
             method.Invoke(classInstance, args);
-           
         }
 
         internal static MethodInfo GetMethodByName(string methodName, object[] args) 
@@ -160,14 +162,6 @@ namespace CurrensNetwork
                         return method;
             }
             return null;
-        }
-
-        internal static void CheckForLocalPerform(Packet packet)
-        {
-            MethodInfo method = GetMethodByName(packet.Name, packet.Params.ToArray());
-            var attribute = (RPC)Attribute.GetCustomAttribute(method, typeof(RPC));
-            if (attribute.DoLocally)
-                InvokeRpcMethod(packet);
         }
     }
 }

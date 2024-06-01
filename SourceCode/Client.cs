@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -15,44 +13,46 @@ namespace CurrensNetwork
     /// </summary>
     public class Client
     {
-        /// <summary>
-        /// Event handler for data received from the remote server.
-        /// </summary>
         public delegate void _OnDataReceived(Packet packet);
+        public delegate void _OnClientConnected();
+        public delegate void _OnClientDisconnected();
+        public delegate void _OnReceivingDataFailure(string error);
+        public delegate void _OnConnectionTerminated();
+        public delegate void _OnDataReceiveProgress(int loaded);
+        public delegate void _OnClientConnectionFailure(string error);
+
+
+        /// <summary>
+        /// Event handler for data received from the host.
+        /// </summary>
+        public event _OnDataReceived OnDataReceived;
         /// <summary>
         /// Event handler for successful connection to the remote server.
         /// </summary>
-        public delegate void _OnClientConnected();
+        public event _OnClientConnected OnClientConnected;
         /// <summary>
-        /// Event handler for disconnection from the remote server.
+        /// Event handler for disconnection from the host.
         /// </summary>
-        public delegate void _OnClientDisconnected();
+        public event _OnClientDisconnected OnClientDisconnected;
         /// <summary>
-        /// Event handler for termination of the connection with the remote server.
+        /// Event handler for termination of the connection with the host.
         /// </summary>
-        public delegate void _OnReceivingDataFailure(Exception exception);
+        public event _OnConnectionTerminated OnConnectionTerminated;
         /// <summary>
         /// Event handler for failure to establish connection with the remote server.
         /// </summary>
-        public delegate void _OnConnectionTerminated();
+        public event _OnClientConnectionFailure OnClientConnectionFailure;
         /// <summary>
         /// Event handler for failure to receive data from the remote server.
         /// </summary>
-        public delegate void _OnDataReceiveProgress(int loaded);
+        public event _OnReceivingDataFailure OnReceivingDataFailure;
         /// <summary>
         /// Invokes on downloading data progress, returns count of readed bytes
         /// </summary>
-        public delegate void _OnClientConnectionFailure(Exception exception);
-
-
-        public event _OnDataReceived OnDataReceived;
-        public event _OnClientConnected OnClientConnected;
-        public event _OnClientDisconnected OnClientDisconnected;
-        public event _OnConnectionTerminated OnConnectionTerminated;
-        public event _OnClientConnectionFailure OnClientConnectionFailure;
-        public event _OnReceivingDataFailure OnReceivingDataFailure;
-
         public event _OnDataReceiveProgress OnDataReceiveProgress;
+
+
+        public int ConnectTimeout { get; set; } = 10000;
 
         private TcpClient client = new TcpClient();
         private NetworkStream stream;
@@ -62,28 +62,33 @@ namespace CurrensNetwork
         /// </summary>
         /// <param name="IP">The IP address of the remote server.</param>
         /// <param name="Port">The port number for the connection.</param>
-        public async Task Connect(string IP, int Port)
+        public void Connect(string IP, int Port)
         {
             if (Port < 0 || Port > 65536)
                 throw new ArgumentOutOfRangeException("Port", $"Port value must be between 1 and 65536");
             try
             {
                 client = new TcpClient();
-                client.Connect(IP, Port);
+                if (!client.ConnectAsync(IP, Port).Wait(ConnectTimeout))
+                {
+                    OnClientConnectionFailure?.Invoke("Time limit expired");
+                    return;
+                }
                 stream = client.GetStream();
             }
             catch (Exception ex)
             {
-                OnClientConnectionFailure?.Invoke(ex);
+                OnClientConnectionFailure?.Invoke(ex.Message);
                 return;
             }
 
             Networking.ClientStream = stream;
-            Networking.SetClient(this);
-            Networking.SetHost(null);
+            Networking.Client = this;
+            Networking.Host = null;
+            Networking.NetworkState = NetworkState.Client;
 
             var ip = client.Client.LocalEndPoint as IPEndPoint;
-            Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
+            Networking.UniqueID = ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString());
 
             OnClientConnected?.Invoke();
 
@@ -94,28 +99,33 @@ namespace CurrensNetwork
         /// </summary>
         /// <param name="IP">The IP address of the remote server.</param>
         /// <param name="Port">The port number for the connection.</param>
-        public async Task Connect(IPAddress IP, int Port)
+        public void Connect(IPAddress IP, int Port)
         {
             if (Port < 0 || Port > 65536)
                 throw new ArgumentOutOfRangeException($"Port value must be between 1 and 65536");
             try
             {
                 client = new TcpClient();
-                await client.ConnectAsync(IP, Port);
+                if (!client.ConnectAsync(IP, Port).Wait(ConnectTimeout))
+                {
+                    OnClientConnectionFailure?.Invoke("Time limit expired");
+                    return;
+                }
                 stream = client.GetStream();
             }
             catch (Exception ex)
             {
-                OnClientConnectionFailure?.Invoke(ex);
+                OnClientConnectionFailure?.Invoke(ex.Message);
                 return;
             }
 
             Networking.ClientStream = stream;
-            Networking.SetClient(this);
-            Networking.SetHost(null);
+            Networking.Client = this;
+            Networking.Host = null;
+            Networking.NetworkState = NetworkState.Client;
 
             var ip = client.Client.LocalEndPoint as IPEndPoint;
-            Networking.SetID(ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString()));
+            Networking.UniqueID = ulong.Parse(ip.Address.MapToIPv4().ToString().Replace(".", "") + ip.Port.ToString());
 
             OnClientConnected?.Invoke();
 
@@ -127,17 +137,22 @@ namespace CurrensNetwork
         /// </summary>
         public void Disconnect()
         {
-            if (!client.Connected) { return; }
+            Networking.NetworkState = NetworkState.None;
             OnClientDisconnected?.Invoke();
             if (client == null)
                 throw new Exception("Client is already disconnected!");
 
-            stream.Close();
-            client.Close();
-
+            try { stream.Close(); } catch { }
+            try { client.Close(); } catch { }
+            
             Networking.ClientStream = null;
-            Networking.SetClient(null);
+            Networking.Client = null;
         }
+        /// <summary>
+        /// Gets <see cref="NetworkStream"/> of <see cref="TcpClient"/>
+        /// </summary>
+        /// <returns></returns>
+        public NetworkStream GetStream() { return stream; }
         private async Task<Packet> ReceivePacketAsync()
         {
             byte[] buffer = new byte[1024];
@@ -168,7 +183,7 @@ namespace CurrensNetwork
                 }
                 catch (Exception ex)
                 {
-                    OnReceivingDataFailure?.Invoke(ex);
+                    OnReceivingDataFailure?.Invoke(ex.Message);
                 }
             }
             Disconnect();
